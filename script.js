@@ -49,7 +49,65 @@ if ("IntersectionObserver" in window) {
 }
 
 const bookingForm = document.querySelector("#bookingForm");
+const bookingSlotsContainer = document.querySelector("#bookingSlots");
 const bookingZoomUrl = "https://us05web.zoom.us/j/87362640884?pwd=K1hsImx0aSZtk5du0V5NtHF1UwCAXs.1";
+
+function renderBookingSlots() {
+  if (!bookingSlotsContainer) return;
+
+  const weeks = Array.isArray(window.AI_LIFE_BOOKING_WEEKS) ? window.AI_LIFE_BOOKING_WEEKS : [];
+  bookingSlotsContainer.replaceChildren();
+
+  if (weeks.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "slot-loading";
+    empty.textContent = "現在、予約可能な日程は準備中です。";
+    bookingSlotsContainer.append(empty);
+    return;
+  }
+
+  let isFirstSlot = true;
+
+  weeks.forEach((week) => {
+    const group = document.createElement("div");
+    group.className = "slot-week";
+
+    const heading = document.createElement("h3");
+    heading.textContent = week.label || "予約可能日程";
+    group.append(heading);
+
+    const list = document.createElement("div");
+    list.className = "slot-week-list";
+
+    (week.slots || []).forEach((slot) => {
+      const value = `${slot.date} ${slot.time}`;
+      const label = document.createElement("label");
+      label.className = "slot-option";
+
+      const input = document.createElement("input");
+      input.type = "radio";
+      input.name = "slot";
+      input.value = value;
+      input.required = isFirstSlot;
+
+      const text = document.createElement("span");
+      const main = document.createElement("strong");
+      main.textContent = value;
+      const note = document.createElement("small");
+      note.textContent = slot.note || "オンラインZoom説明会";
+
+      text.append(main, note);
+      label.append(input, text);
+      list.append(label);
+      isFirstSlot = false;
+    });
+
+    group.append(list);
+    bookingSlotsContainer.append(group);
+  });
+}
+
+renderBookingSlots();
 
 if (bookingForm) {
   bookingForm.addEventListener("submit", async (event) => {

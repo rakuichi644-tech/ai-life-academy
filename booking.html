@@ -114,27 +114,9 @@
           >
             <fieldset>
               <legend>希望日程</legend>
-              <label class="slot-option">
-                <input type="radio" name="slot" value="7月10日（金）20:00〜21:00" required />
-                <span>
-                  <strong>7月10日（金）20:00〜21:00</strong>
-                  <small>オンラインZoom説明会</small>
-                </span>
-              </label>
-              <label class="slot-option">
-                <input type="radio" name="slot" value="7月12日（日）21:00〜22:00" />
-                <span>
-                  <strong>7月12日（日）21:00〜22:00</strong>
-                  <small>オンラインZoom説明会</small>
-                </span>
-              </label>
-              <label class="slot-option">
-                <input type="radio" name="slot" value="7月14日（火）20:00〜21:00" />
-                <span>
-                  <strong>7月14日（火）20:00〜21:00</strong>
-                  <small>オンラインZoom説明会</small>
-                </span>
-              </label>
+              <div class="booking-slots" id="bookingSlots" aria-live="polite">
+                <p class="slot-loading">日程を読み込み中です...</p>
+              </div>
             </fieldset>
 
             <div class="form-grid">
@@ -229,6 +211,7 @@
       </div>
     </footer>
 
+    <script src="booking-slots.js"></script>
     <script src="script.js"></script>
   </body>
 </html>
