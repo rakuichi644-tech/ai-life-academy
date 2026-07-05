@@ -25,6 +25,12 @@ const HEADERS = [
   'メモ',
 ];
 
+const ROW_COLORS = {
+  active: '#ffffff',
+  refunded: '#fce8e6',
+  needsCheck: '#fff4ce',
+};
+
 function doPost(e) {
   try {
     const payload = JSON.parse(e.postData.contents);
@@ -126,11 +132,27 @@ function handleRefund_(event) {
     return json_({ ok: true, needsCheck: true });
   }
 
-  const folder = DriveApp.getFolderById(CONFIG.memberFolderId);
-  folder.removeViewer(purchaser.email);
+  let driveStatus = '削除済み';
+  let driveMemo = '';
+  try {
+    const folder = DriveApp.getFolderById(CONFIG.memberFolderId);
+    folder.removeViewer(purchaser.email);
+  } catch (error) {
+    driveStatus = '削除済み/要確認';
+    driveMemo = `Drive権限削除時の注意: ${error.message}`;
+  }
+
+  markPurchaserRefunded_(sheet, purchaser, {
+    refundEventId: event.id,
+    eventType: event.type,
+    chargeId,
+    paymentIntentId,
+    driveStatus,
+    memo: driveMemo,
+  });
 
   GmailApp.sendEmail(CONFIG.adminEmail, '【AI LIFE ACADEMY】返金者の会員権限を削除しました',
-    `以下のメールアドレスを会員コンテンツから削除しました。\n\n${purchaser.email}\n\nStripeイベントID: ${event.id}`,
+    `以下のメールアドレスを会員コンテンツから削除しました。\n\n${purchaser.email}\n\nStripeイベントID: ${event.id}\nDrive権限: ${driveStatus}${driveMemo ? `\n${driveMemo}` : ''}`,
     { name: CONFIG.senderName }
   );
 
@@ -142,8 +164,9 @@ function handleRefund_(event) {
     eventType: event.type,
     chargeId,
     paymentIntentId,
-    driveStatus: '削除済み',
+    driveStatus,
     mailStatus: '運営へ通知済み',
+    memo: driveMemo,
   });
 
   return json_({ ok: true, removed: true, email: purchaser.email });
@@ -261,8 +284,33 @@ function hasProcessedEvent_(sheet, eventId) {
   return values.includes(eventId);
 }
 
+function markPurchaserRefunded_(sheet, purchaser, refundData) {
+  const rowNumber = purchaser.rowNumber;
+  if (!rowNumber) return;
+
+  const indexes = {
+    status: HEADERS.indexOf('ステータス') + 1,
+    eventType: HEADERS.indexOf('Stripeイベント種別') + 1,
+    chargeId: HEADERS.indexOf('Charge ID') + 1,
+    paymentIntentId: HEADERS.indexOf('Payment Intent ID') + 1,
+    driveStatus: HEADERS.indexOf('Drive権限') + 1,
+    mailStatus: HEADERS.indexOf('メール送信') + 1,
+    memo: HEADERS.indexOf('メモ') + 1,
+  };
+
+  sheet.getRange(rowNumber, indexes.status).setValue('REFUNDED');
+  sheet.getRange(rowNumber, indexes.eventType).setValue(refundData.eventType);
+  if (refundData.chargeId) sheet.getRange(rowNumber, indexes.chargeId).setValue(refundData.chargeId);
+  if (refundData.paymentIntentId) sheet.getRange(rowNumber, indexes.paymentIntentId).setValue(refundData.paymentIntentId);
+  sheet.getRange(rowNumber, indexes.driveStatus).setValue(refundData.driveStatus || '削除済み');
+  sheet.getRange(rowNumber, indexes.mailStatus).setValue('運営へ通知済み');
+  sheet.getRange(rowNumber, indexes.memo).setValue(
+    `返金済み / 返金イベントID: ${refundData.refundEventId}${refundData.memo ? ` / ${refundData.memo}` : ''}`
+  );
+  sheet.getRange(rowNumber, 1, 1, HEADERS.length).setBackground(ROW_COLORS.refunded);
+}
+
 function findPurchaserForRefund_(sheet, data) {
-  if (data.email) return { email: data.email, name: '' };
   if (sheet.getLastRow() <= 1) return {};
 
   const values = sheet.getRange(2, 1, sheet.getLastRow() - 1, HEADERS.length).getValues();
@@ -273,17 +321,23 @@ function findPurchaserForRefund_(sheet, data) {
     chargeId: HEADERS.indexOf('Charge ID'),
   };
 
-  const row = values.find((item) => {
+  const rowIndex = values.findIndex((item) => {
     return (
       data.paymentIntentId && item[indexes.paymentIntentId] === data.paymentIntentId ||
-      data.chargeId && item[indexes.chargeId] === data.chargeId
+      data.chargeId && item[indexes.chargeId] === data.chargeId ||
+      data.email && normalizeEmail_(item[indexes.email]) === data.email
     );
   });
 
-  if (!row) return {};
+  if (rowIndex === -1) {
+    return data.email ? { email: data.email, name: '' } : {};
+  }
+
+  const row = values[rowIndex];
   return {
     name: row[indexes.name],
     email: normalizeEmail_(row[indexes.email]),
+    rowNumber: rowIndex + 2,
   };
 }
 
