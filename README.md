@@ -48,3 +48,17 @@ GitHub Pagesでそのまま公開できる静的ホームページです。
 
 GitHub Pagesの無料URLを使う場合、維持費は0円です。
 独自ドメインを使う場合だけ、ドメイン費用が別途かかります。
+
+## 会員コンテンツの自動付与
+
+決済後に購入者へ会員コンテンツを自動案内する仕組みは、`automation/stripe-member-access.gs` に用意しています。
+
+想定フロー:
+
+1. Stripe Payment Linksで決済
+2. Stripe WebhookがApps Scriptへ決済完了を通知
+3. Apps ScriptがGoogle Driveの会員コンテンツフォルダへ閲覧権限を付与
+4. 購入者へ会員コンテンツURL入りの案内メールを送信
+5. 返金イベントを受け取った場合は閲覧権限を削除
+
+設定手順は `automation/stripe-member-access-README.md` を確認してください。
