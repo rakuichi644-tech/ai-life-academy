@@ -19,12 +19,12 @@ if (menuButton && nav) {
 
 const revealTargets = [
   ...document.querySelectorAll(
-    ".section-heading, .reason-grid, .split-layout, .guarantee-box, .comparison-table, .bonus-layout, .faq-layout, .company-layout, .briefing-panel, .legal-list, .policy-stack section, .curriculum-summary, .roadmap-panel, .deliverables-panel"
+    ".section-heading, .reason-grid, .split-layout, .guarantee-box, .comparison-table, .bonus-layout, .faq-layout, .company-layout, .briefing-panel, .legal-list, .policy-stack section, .curriculum-summary, .roadmap-panel, .deliverables-panel, .briefing-visual, .briefing-bonus-row, .briefing-program, .booking-calendar"
   ),
 ];
 
 const staggerTargets = [
-  ...document.querySelectorAll(".worry-grid, .level-stack, .chapter-grid, .bonus-list, .flow-diagram"),
+  ...document.querySelectorAll(".worry-grid, .level-stack, .chapter-grid, .bonus-list, .flow-diagram, .calendar-grid"),
 ];
 
 revealTargets.forEach((element) => element.classList.add("reveal"));
@@ -93,13 +93,52 @@ function normalizeSlotGroups(weeks) {
   }));
 }
 
+function flattenSlots(weeks) {
+  return weeks.flatMap((week) => week.slots || []);
+}
+
+function getSlotDate(slot) {
+  const idMatch = String(slot.id || "").match(/(\d{4})-(\d{2})-(\d{2})/);
+  if (idMatch) {
+    return new Date(Number(idMatch[1]), Number(idMatch[2]) - 1, Number(idMatch[3]));
+  }
+
+  const dateMatch = String(slot.date || "").match(/(\d{1,2})月(\d{1,2})日/);
+  if (!dateMatch) return null;
+  const now = new Date();
+  return new Date(now.getFullYear(), Number(dateMatch[1]) - 1, Number(dateMatch[2]));
+}
+
+function formatMonthTitle(date) {
+  return `${date.getFullYear()}年${date.getMonth() + 1}月`;
+}
+
+function formatDateKey(date) {
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
+function buildCalendarSlots(slots) {
+  const grouped = new Map();
+  slots.forEach((slot) => {
+    const date = getSlotDate(slot);
+    if (!date || Number.isNaN(date.getTime())) return;
+    const key = formatDateKey(date);
+    if (!grouped.has(key)) grouped.set(key, { date, slots: [] });
+    grouped.get(key).slots.push(slot);
+  });
+  return grouped;
+}
+
 function renderBookingSlots(weeksSource = window.AI_LIFE_BOOKING_WEEKS) {
   if (!bookingSlotsContainer) return;
 
   const weeks = Array.isArray(weeksSource) ? normalizeSlotGroups(weeksSource) : [];
+  const slots = flattenSlots(weeks);
   bookingSlotsContainer.replaceChildren();
 
-  if (weeks.length === 0) {
+  if (slots.length === 0) {
     const empty = document.createElement("p");
     empty.className = "slot-loading";
     empty.textContent = "現在、予約可能な日程は準備中です。";
@@ -107,53 +146,95 @@ function renderBookingSlots(weeksSource = window.AI_LIFE_BOOKING_WEEKS) {
     return;
   }
 
-  let isFirstSlot = true;
+  const calendar = document.createElement("div");
+  calendar.className = "booking-calendar";
 
-  weeks.forEach((week) => {
-    const group = document.createElement("div");
-    group.className = "slot-week";
+  const selected = document.createElement("p");
+  selected.className = "calendar-selected";
+  selected.textContent = "空き日程をタップしてください。";
 
-    const heading = document.createElement("h3");
-    heading.textContent = week.label || "予約可能日程";
-    group.append(heading);
+  const slotMap = buildCalendarSlots(slots);
+  const firstDate = [...slotMap.values()].map((item) => item.date).sort((a, b) => a - b)[0] || new Date();
+  const calendarStart = new Date(firstDate.getFullYear(), firstDate.getMonth(), 1);
+  const daysInMonth = new Date(calendarStart.getFullYear(), calendarStart.getMonth() + 1, 0).getDate();
+  const offset = calendarStart.getDay();
 
-    const list = document.createElement("div");
-    list.className = "slot-week-list";
+  const header = document.createElement("div");
+  header.className = "calendar-header";
+  const title = document.createElement("h3");
+  title.textContent = formatMonthTitle(calendarStart);
+  const legend = document.createElement("span");
+  legend.textContent = "残席のある日程を選択";
+  header.append(title, legend);
 
-    (week.slots || []).forEach((slot) => {
-      const value = slot.label || `${slot.date} ${slot.time}`;
-      const remaining = Number(slot.remaining ?? slot.capacity ?? 0);
-      const isFull = remaining <= 0;
-      const label = document.createElement("label");
-      label.className = "slot-option";
-      if (isFull) label.classList.add("is-full");
+  const grid = document.createElement("div");
+  grid.className = "calendar-grid";
+  ["日", "月", "火", "水", "木", "金", "土"].forEach((day) => {
+    const cell = document.createElement("span");
+    cell.className = "calendar-weekday";
+    cell.textContent = day;
+    grid.append(cell);
+  });
+
+  for (let i = 0; i < offset; i += 1) {
+    const blank = document.createElement("span");
+    blank.className = "calendar-day is-blank";
+    grid.append(blank);
+  }
+
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    const date = new Date(calendarStart.getFullYear(), calendarStart.getMonth(), day);
+    const key = formatDateKey(date);
+    const entry = slotMap.get(key);
+    const daySlots = entry?.slots || [];
+    const available = daySlots.find((slot) => Number(slot.remaining ?? slot.capacity ?? 0) > 0);
+    const representative = available || daySlots[0];
+    const isFull = daySlots.length > 0 && !available;
+    const isAvailable = Boolean(available);
+    const cell = representative ? document.createElement("label") : document.createElement("span");
+    cell.className = "calendar-day";
+    if (representative) cell.classList.add("has-slot");
+    if (isFull) cell.classList.add("is-full");
+
+    const dateText = document.createElement("strong");
+    dateText.textContent = String(day);
+    cell.append(dateText);
+
+    if (representative) {
+      const time = document.createElement("small");
+      time.textContent = representative.time || "時間未定";
+      const seat = document.createElement("em");
+      const remaining = Number(representative.remaining ?? representative.capacity ?? 0);
+      seat.textContent = isFull ? "満員御礼" : `残席 ${remaining}`;
+      cell.append(time, seat);
 
       const input = document.createElement("input");
       input.type = "radio";
       input.name = "slot";
-      input.value = value;
-      input.dataset.slotId = slot.id || "";
-      input.required = isFirstSlot && !isFull;
-      input.disabled = isFull;
+      input.value = representative.label || `${representative.date || ""} ${representative.time || ""}`.trim();
+      input.dataset.slotId = representative.id || "";
+      input.required = isAvailable;
+      input.disabled = !isAvailable;
+      input.className = "calendar-radio";
+      cell.append(input);
 
-      const text = document.createElement("span");
-      const main = document.createElement("strong");
-      main.textContent = value;
-      const note = document.createElement("small");
-      note.textContent = slot.note || "オンラインZoom説明会";
-      const seat = document.createElement("em");
-      seat.className = isFull ? "slot-seat is-full" : "slot-seat";
-      seat.textContent = isFull ? "満員御礼" : `残席 ${remaining}`;
+      if (isAvailable) {
+        cell.addEventListener("click", () => {
+          bookingSlotsContainer.querySelectorAll(".calendar-day.is-selected").forEach((element) => {
+            element.classList.remove("is-selected");
+          });
+          input.checked = true;
+          cell.classList.add("is-selected");
+          selected.textContent = `選択中: ${input.value}`;
+        });
+      }
+    }
 
-      text.append(main, note, seat);
-      label.append(input, text);
-      list.append(label);
-      if (!isFull) isFirstSlot = false;
-    });
+    grid.append(cell);
+  }
 
-    group.append(list);
-    bookingSlotsContainer.append(group);
-  });
+  calendar.append(header, grid, selected);
+  bookingSlotsContainer.append(calendar);
 }
 
 renderBookingSlots();
@@ -225,7 +306,6 @@ if (bookingForm) {
         managedData.append("phone", data.get("phone") || "");
         managedData.append("experience", data.get("experience") || "");
         managedData.append("interest", data.get("interest") || "");
-        managedData.append("coupon", data.get("briefingCoupon") ? "FS20260701" : "");
         managedData.append("zoom", bookingZoomUrl);
         managedData.append("source", location.href);
 
@@ -238,8 +318,7 @@ if (bookingForm) {
 
         bookingForm.reset();
         await loadManagedBookingSlots();
-        status.textContent =
-          `予約内容を送信しました。Zoomリンクをメールでお送りします。クーポンコード: FS20260701`;
+        status.textContent = "予約内容を送信しました。Zoomリンクをメールでお送りします。";
         return;
       }
 

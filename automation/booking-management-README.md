@@ -8,14 +8,14 @@
 - 残席表示
 - 残席0の満員御礼表示
 - 予約者へのZoomリンク自動メール
-- 説明会参加者限定クーポン `FS20260701` の案内
+- 説明会後に配布するクーポン対象者の管理
 - スプレッドシート上で「未申込」「説明会参加済み」「決済済み」「返金済み」などを管理
 
 ## 設定手順
 
 1. Google Apps Scriptを新規作成します。
 2. `booking-management.gs` の中身を貼り付けます。
-3. Script Propertiesに `BOOKING_ADMIN_KEY` を追加します。
+3. `setupBookingSystem` を1回実行し、スプレッドシートと管理キーを作成します。
 4. ウェブアプリとしてデプロイし、実行ユーザーを自分、アクセス権を全員にします。
 5. 発行されたURLを `booking-slots.js` の `apiEndpoint` に設定します。
 6. `admin.html` を開き、Apps Script URLと管理キーを入力します。

@@ -5,7 +5,6 @@ const BOOKING_CONFIG = {
   slotsSheetName: '予約枠',
   reservationsSheetName: '予約者管理',
   zoomUrl: 'https://us05web.zoom.us/j/87362640884?pwd=K1hsImx0aSZtk5du0V5NtHF1UwCAXs.1',
-  couponCode: 'FS20260701',
 };
 
 const SLOT_HEADERS = [
@@ -56,6 +55,25 @@ function doGet(e) {
   return output_(e, { ok: false, error: 'Unknown action' });
 }
 
+function setupBookingSystem() {
+  const properties = PropertiesService.getScriptProperties();
+  let adminKey = properties.getProperty('BOOKING_ADMIN_KEY');
+  if (!adminKey) {
+    adminKey = Utilities.getUuid().replace(/-/g, '').slice(0, 20);
+    properties.setProperty('BOOKING_ADMIN_KEY', adminKey);
+  }
+
+  const spreadsheet = getSpreadsheet_();
+  getSheet_(BOOKING_CONFIG.slotsSheetName, SLOT_HEADERS);
+  getSheet_(BOOKING_CONFIG.reservationsSheetName, RESERVATION_HEADERS);
+
+  return {
+    spreadsheetUrl: spreadsheet.getUrl(),
+    spreadsheetId: spreadsheet.getId(),
+    adminKey,
+  };
+}
+
 function doPost(e) {
   try {
     const action = getParam_(e, 'action');
@@ -97,7 +115,6 @@ function reserveSlot_(e) {
   const experience = getParam_(e, 'experience');
   const interest = getParam_(e, 'interest');
   const source = getParam_(e, 'source');
-  const coupon = getParam_(e, 'coupon') || BOOKING_CONFIG.couponCode;
 
   if (!slotId && !slotLabel) throw new Error('希望日程が選択されていません。');
   if (!email) throw new Error('メールアドレスがありません。');
@@ -125,7 +142,7 @@ function reserveSlot_(e) {
     experience,
     interest,
     BOOKING_CONFIG.zoomUrl,
-    coupon,
+    '',
     '未参加',
     '未申込',
     '',
@@ -138,14 +155,13 @@ function reserveSlot_(e) {
     name,
     slot: finalSlotLabel,
     zoomUrl: BOOKING_CONFIG.zoomUrl,
-    coupon,
   }), {
     name: BOOKING_CONFIG.senderName,
     replyTo: BOOKING_CONFIG.adminEmail,
   });
 
   GmailApp.sendEmail(BOOKING_CONFIG.adminEmail, '【AI LIFE ACADEMY】無料説明会の予約が入りました',
-    `無料説明会の予約が入りました。\n\n氏名: ${name}\nメール: ${email}\n電話番号: ${phone}\n希望日程: ${finalSlotLabel}\nAI経験: ${experience}\n知りたいこと: ${interest}\nクーポン: ${coupon}`,
+    `無料説明会の予約が入りました。\n\n氏名: ${name}\nメール: ${email}\n電話番号: ${phone}\n希望日程: ${finalSlotLabel}\nAI経験: ${experience}\n知りたいこと: ${interest}`,
     { name: BOOKING_CONFIG.senderName }
   );
 
@@ -266,13 +282,48 @@ function getPublicSlotGroups_(includePrivate) {
 }
 
 function seedSlots_(sheet) {
-  [
-    ['seed_20260710_2000', '7月10日（金）〜7月16日（木）', '7月10日（金）', '20:00〜21:00', 'オンラインZoom説明会', 5, 5, 'TRUE'],
-    ['seed_20260712_2100', '7月10日（金）〜7月16日（木）', '7月12日（日）', '21:00〜22:00', 'オンラインZoom説明会', 5, 3, 'TRUE'],
-    ['seed_20260714_2000', '7月10日（金）〜7月16日（木）', '7月14日（火）', '20:00〜21:00', 'オンラインZoom説明会', 5, 0, 'TRUE'],
-  ].forEach((item) => {
-    sheet.appendRow(item.concat([new Date(), new Date()]));
-  });
+  const today = new Date();
+  const start = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+  const rows = [];
+
+  for (let i = 0; i < 32; i += 1) {
+    const date = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+    const day = date.getDay();
+    if (![0, 2, 5].includes(day)) continue;
+
+    const time = day === 0 ? '21:00〜22:00' : '20:00〜21:00';
+    const timeId = time.slice(0, 5).replace(':', '');
+    const id = `seed_${Utilities.formatDate(date, 'Asia/Tokyo', 'yyyyMMdd')}_${timeId}`;
+    rows.push([
+      id,
+      formatWeekLabel_(date),
+      formatJapaneseDate_(date),
+      time,
+      'オンラインZoom説明会',
+      5,
+      5,
+      'TRUE',
+      new Date(),
+      new Date(),
+    ]);
+  }
+
+  if (rows.length > 0) {
+    sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, SLOT_HEADERS.length).setValues(rows);
+  }
+}
+
+function formatJapaneseDate_(date) {
+  const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
+  return `${date.getMonth() + 1}月${date.getDate()}日（${weekdays[date.getDay()]}）`;
+}
+
+function formatWeekLabel_(date) {
+  const start = new Date(date);
+  start.setDate(date.getDate() - date.getDay());
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+  return `${formatJapaneseDate_(start)}〜${formatJapaneseDate_(end)}`;
 }
 
 function findSlot_(sheet, slotId, slotLabel) {
@@ -351,11 +402,6 @@ AI LIFE ACADEMY 無料説明会のご予約ありがとうございます。
 
 日程: ${data.slot}
 Zoom: ${data.zoomUrl}
-
-説明会参加者限定クーポン:
-${data.coupon}
-
-説明会後に講座へお申し込みいただく場合、Stripe決済ページでクーポンコードをご利用ください。
 
 当日はお時間になりましたらZoomへご参加ください。
 

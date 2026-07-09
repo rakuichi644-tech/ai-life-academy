@@ -1,5 +1,5 @@
 window.AI_LIFE_BOOKING_CONFIG = {
-  apiEndpoint: "",
+  apiEndpoint: "https://script.google.com/macros/s/AKfycbzmO7AwbQ1wF1GYp__NkVQNFGWmvFd5O4wJks2QpOY7AV8-pjK-AXexsucnLDq6MZk/exec",
   adminPage: "admin.html",
 };
 

@@ -2,9 +2,10 @@ const settingsForm = document.querySelector("#adminSettings");
 const slotForm = document.querySelector("#slotForm");
 const slotList = document.querySelector("#adminSlotList");
 const adminStatus = document.querySelector("#adminStatus");
+const adminBookingConfig = window.AI_LIFE_BOOKING_CONFIG || {};
 
 const adminState = {
-  endpoint: localStorage.getItem("aiLifeBookingApi") || "",
+  endpoint: localStorage.getItem("aiLifeBookingApi") || adminBookingConfig.apiEndpoint || "",
   key: localStorage.getItem("aiLifeBookingAdminKey") || "",
 };
 
