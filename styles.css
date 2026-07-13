@@ -1358,6 +1358,407 @@ h3 {
   box-shadow: 0 14px 34px rgba(22, 135, 255, 0.24);
 }
 
+.apply-page {
+  overflow: hidden;
+  padding-top: 72px;
+  background:
+    linear-gradient(180deg, rgba(251, 255, 253, 0.96), rgba(241, 250, 255, 0.95)),
+    radial-gradient(circle at 88% 8%, rgba(22, 135, 255, 0.12), transparent 28%);
+}
+
+.apply-hero {
+  position: relative;
+  overflow: hidden;
+  min-height: 92vh;
+  padding: clamp(86px, 10vw, 138px) clamp(18px, 4vw, 56px) clamp(58px, 8vw, 98px);
+  background:
+    linear-gradient(90deg, rgba(2, 8, 18, 0.82), rgba(2, 8, 18, 0.34) 54%, rgba(2, 8, 18, 0.66)),
+    url("assets/hero-ai-enterprise-bg.jpg") center / cover fixed;
+  color: #ffffff;
+}
+
+.apply-hero::before {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(99, 244, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(99, 244, 255, 0.08) 1px, transparent 1px);
+  background-size: 70px 70px;
+  content: "";
+  opacity: 0.5;
+  pointer-events: none;
+  animation: gridDrift 20s linear infinite;
+}
+
+.apply-hero-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 1fr minmax(310px, 390px);
+  gap: clamp(28px, 6vw, 76px);
+  align-items: center;
+}
+
+.apply-hero-copy .eyebrow {
+  color: #7ce8ff;
+}
+
+.apply-hero-copy .lead {
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.apply-hero-actions,
+.apply-trust-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.apply-hero-actions {
+  margin-top: 32px;
+}
+
+.apply-hero .button.secondary {
+  border-color: rgba(255, 255, 255, 0.34);
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  backdrop-filter: blur(14px);
+}
+
+.apply-trust-row {
+  margin-top: 24px;
+}
+
+.apply-trust-row span {
+  padding: 8px 11px;
+  border: 1px solid rgba(124, 232, 255, 0.22);
+  border-radius: 8px;
+  background: rgba(2, 18, 38, 0.42);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 13px;
+  font-weight: 900;
+  backdrop-filter: blur(12px);
+}
+
+.apply-price-card {
+  display: grid;
+  gap: 18px;
+  padding: clamp(24px, 4vw, 34px);
+  border: 1px solid rgba(124, 232, 255, 0.28);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.22);
+  color: var(--ink);
+  backdrop-filter: blur(18px);
+}
+
+.apply-price-card > p {
+  width: fit-content;
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(22, 135, 255, 0.1);
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.apply-price {
+  display: grid;
+  gap: 4px;
+}
+
+.apply-price span {
+  color: #7e8a86;
+  font-weight: 900;
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+}
+
+.apply-price strong {
+  color: var(--teal);
+  font-size: clamp(42px, 6vw, 58px);
+  line-height: 1;
+}
+
+.apply-price small,
+.apply-price-card > small {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.apply-price-card ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.apply-price-card li {
+  position: relative;
+  padding-left: 24px;
+  color: #344540;
+  font-weight: 800;
+}
+
+.apply-price-card li::before {
+  position: absolute;
+  left: 0;
+  color: var(--green);
+  content: "✓";
+}
+
+.apply-result-grid,
+.apply-change-grid,
+.apply-timeline,
+.apply-chapter-bands {
+  display: grid;
+  gap: 16px;
+}
+
+.apply-result-grid {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.apply-result-grid article {
+  overflow: hidden;
+  border: 1px solid rgba(27, 113, 229, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 20px 58px rgba(10, 36, 60, 0.1);
+  transition: transform 220ms ease, box-shadow 220ms ease;
+}
+
+.apply-result-grid article:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 28px 78px rgba(10, 36, 60, 0.15);
+}
+
+.apply-result-grid img {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+}
+
+.apply-result-grid h3,
+.apply-result-grid p {
+  padding-inline: 22px;
+}
+
+.apply-result-grid h3 {
+  margin-top: 22px;
+}
+
+.apply-result-grid p {
+  margin-bottom: 22px;
+  color: var(--muted);
+}
+
+.apply-before-after {
+  background:
+    linear-gradient(180deg, rgba(238, 248, 241, 0.92), rgba(244, 250, 255, 0.92)),
+    url("assets/daily-ai.png") center / cover fixed;
+}
+
+.apply-change-grid {
+  grid-template-columns: 1fr 1fr;
+}
+
+.apply-change-grid article {
+  position: relative;
+  overflow: hidden;
+  min-height: 210px;
+  padding: clamp(24px, 4vw, 34px);
+  border: 1px solid rgba(27, 113, 229, 0.16);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 22px 64px rgba(10, 36, 60, 0.1);
+  backdrop-filter: blur(12px);
+}
+
+.apply-change-grid article::after {
+  position: absolute;
+  right: -46px;
+  bottom: -46px;
+  width: 140px;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(22, 135, 255, 0.2), transparent 68%);
+  content: "";
+}
+
+.apply-change-grid span,
+.apply-timeline span,
+.apply-chapter-bands span,
+.apply-final-price span {
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.apply-change-grid p,
+.apply-timeline p,
+.apply-chapter-bands p,
+.apply-deliverables p,
+.apply-final-box p {
+  color: var(--muted);
+}
+
+.apply-roadmap {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(241, 250, 255, 0.92)),
+    url("assets/hero-ai-learning.png") center / cover fixed;
+}
+
+.apply-timeline {
+  grid-template-columns: repeat(5, 1fr);
+}
+
+.apply-timeline article {
+  position: relative;
+  padding: 22px;
+  border: 1px solid rgba(27, 113, 229, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 18px 50px rgba(10, 36, 60, 0.09);
+  backdrop-filter: blur(12px);
+}
+
+.apply-timeline article:not(:last-child)::after {
+  position: absolute;
+  top: 50%;
+  right: -17px;
+  z-index: 2;
+  width: 24px;
+  height: 24px;
+  border-top: 2px solid rgba(22, 135, 255, 0.55);
+  border-right: 2px solid rgba(22, 135, 255, 0.55);
+  background: rgba(255, 255, 255, 0.88);
+  content: "";
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.apply-curriculum {
+  background: #ffffff;
+}
+
+.apply-chapter-bands {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.apply-chapter-bands article {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(24px, 4vw, 34px);
+  border: 1px solid rgba(8, 121, 111, 0.16);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(242, 251, 255, 0.94));
+  box-shadow: var(--shadow);
+}
+
+.apply-chapter-bands article::before {
+  display: block;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 22px;
+  border: 1px solid rgba(22, 135, 255, 0.18);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 30% 32%, rgba(99, 244, 255, 0.85) 0 5px, transparent 6px),
+    linear-gradient(135deg, #06152f, #0a4f84 58%, #14d8c6);
+  box-shadow: 0 18px 42px rgba(22, 135, 255, 0.18);
+  content: "";
+}
+
+.apply-deliverables {
+  background:
+    linear-gradient(90deg, rgba(238, 248, 241, 0.96), rgba(244, 250, 255, 0.94)),
+    url("assets/funnel-flow.png") center / cover fixed;
+}
+
+.apply-deliverables-grid {
+  display: grid;
+  grid-template-columns: 0.7fr 1.3fr;
+  gap: clamp(28px, 6vw, 72px);
+  align-items: center;
+}
+
+.apply-proof {
+  background: #ffffff;
+}
+
+.apply-final {
+  background:
+    linear-gradient(90deg, rgba(2, 8, 18, 0.9), rgba(2, 20, 42, 0.8)),
+    url("assets/hero-ai-enterprise-bg.jpg") center / cover fixed;
+  color: #ffffff;
+}
+
+.apply-final-box {
+  display: grid;
+  grid-template-columns: 1fr minmax(280px, 360px);
+  gap: clamp(24px, 5vw, 58px);
+  align-items: center;
+  padding: clamp(28px, 5vw, 56px);
+  border: 1px solid rgba(124, 232, 255, 0.22);
+  border-radius: 8px;
+  background: rgba(2, 18, 38, 0.52);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(14px);
+}
+
+.apply-final .eyebrow {
+  color: #7ce8ff;
+}
+
+.apply-final-box p {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.apply-final-price {
+  display: grid;
+  gap: 14px;
+}
+
+.apply-final-price span {
+  color: #7ce8ff;
+}
+
+.apply-final-price strong {
+  font-size: clamp(30px, 4vw, 42px);
+}
+
+.floating-apply-cta {
+  position: fixed;
+  right: clamp(16px, 3vw, 30px);
+  bottom: clamp(16px, 3vw, 30px);
+  z-index: 70;
+  display: grid;
+  min-width: 166px;
+  padding: 13px 18px;
+  border: 1px solid rgba(124, 232, 255, 0.42);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(5, 18, 43, 0.94), rgba(6, 78, 162, 0.92) 58%, rgba(20, 216, 198, 0.92));
+  box-shadow: 0 18px 44px rgba(4, 28, 62, 0.36), 0 0 0 6px rgba(20, 216, 198, 0.1);
+  color: #ffffff;
+  line-height: 1.2;
+  backdrop-filter: blur(16px);
+}
+
+.floating-apply-cta span {
+  color: #9ff5ff;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.floating-apply-cta strong {
+  font-size: 17px;
+}
+
 .faq-list {
   display: grid;
   gap: 10px;
@@ -2651,8 +3052,16 @@ h3 {
     grid-template-columns: 1fr;
   }
 
+  .apply-hero-grid,
+  .apply-deliverables-grid,
+  .apply-final-box {
+    grid-template-columns: 1fr;
+  }
+
   .bonus-card-row,
-  .briefing-program {
+  .briefing-program,
+  .apply-result-grid,
+  .apply-chapter-bands {
     grid-template-columns: 1fr;
   }
 
@@ -2679,8 +3088,13 @@ h3 {
   }
 
   .day-roadmap article:not(:last-child)::after,
-  .flow-diagram article:not(:last-child)::after {
+  .flow-diagram article:not(:last-child)::after,
+  .apply-timeline article:not(:last-child)::after {
     display: none;
+  }
+
+  .apply-timeline {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -2732,7 +3146,8 @@ h3 {
   .flow-diagram,
   .manual-checks,
   .manual-rhythm,
-  .pace-grid {
+  .pace-grid,
+  .apply-change-grid {
     grid-template-columns: 1fr;
   }
 
@@ -2794,6 +3209,14 @@ h3 {
     background-attachment: scroll;
   }
 
+  .apply-hero,
+  .apply-roadmap,
+  .apply-before-after,
+  .apply-deliverables,
+  .apply-final {
+    background-attachment: scroll;
+  }
+
   .calendar-header {
     align-items: flex-start;
     flex-direction: column;
@@ -2831,6 +3254,13 @@ h3 {
     bottom: 12px;
     min-width: 142px;
     padding: 11px 15px 12px 42px;
+  }
+
+  .floating-apply-cta {
+    right: 12px;
+    bottom: 12px;
+    min-width: 148px;
+    padding: 11px 15px;
   }
 
   .admin-slot-item {
