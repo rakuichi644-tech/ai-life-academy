@@ -289,11 +289,16 @@ function getPublicSlotGroups_(includePrivate) {
 
   const values = sheet.getRange(2, 1, sheet.getLastRow() - 1, SLOT_HEADERS.length).getValues();
   const groups = {};
+  const seenSlotIds = new Set();
 
   values.forEach((row) => {
     const isPublic = row[SLOT_HEADERS.indexOf('公開')] !== 'FALSE';
     if (!includePrivate && !isPublic) return;
     if (!includePrivate && isExpiredSlotRow_(row)) return;
+
+    const slotId = String(row[SLOT_HEADERS.indexOf('slotId')] || '');
+    if (slotId && seenSlotIds.has(slotId)) return;
+    if (slotId) seenSlotIds.add(slotId);
 
     const weekLabel = row[SLOT_HEADERS.indexOf('週ラベル')] || '予約可能日程';
     if (!groups[weekLabel]) groups[weekLabel] = { label: weekLabel, slots: [] };
@@ -301,7 +306,7 @@ function getPublicSlotGroups_(includePrivate) {
     const date = row[SLOT_HEADERS.indexOf('日付')];
     const time = row[SLOT_HEADERS.indexOf('時間')];
     groups[weekLabel].slots.push({
-      id: row[SLOT_HEADERS.indexOf('slotId')],
+      id: slotId,
       date,
       time,
       label: `${date} ${time}`,
