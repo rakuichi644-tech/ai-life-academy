@@ -59,13 +59,18 @@ function fetchJsonp(url) {
     const callbackName = `aiLifeBooking_${Date.now()}_${Math.random().toString(16).slice(2)}`;
     const script = document.createElement("script");
     const separator = url.includes("?") ? "&" : "?";
-    script.src = `${url}${separator}callback=${encodeURIComponent(callbackName)}`;
-    script.async = true;
-
+    const timeout = window.setTimeout(() => {
+      cleanup();
+      reject(new Error("予約管理システムから応答がありません。"));
+    }, 15000);
     const cleanup = () => {
+      window.clearTimeout(timeout);
       delete window[callbackName];
       script.remove();
     };
+
+    script.src = `${url}${separator}callback=${encodeURIComponent(callbackName)}`;
+    script.async = true;
 
     window[callbackName] = (data) => {
       cleanup();
@@ -329,6 +334,7 @@ if (bookingForm) {
       bookingForm.append(status);
     }
 
+    const bookingApi = bookingForm.dataset.bookingApi || bookingConfig.apiEndpoint || "";
     const endpoint = bookingForm.dataset.endpoint || bookingForm.action;
     const googleFormEntries = {
       slot: bookingForm.dataset.entrySlot,
@@ -341,7 +347,7 @@ if (bookingForm) {
       source: bookingForm.dataset.entrySource,
     };
     const hasAllEntries = Object.values(googleFormEntries).every(Boolean);
-    if (!endpoint || !hasAllEntries || endpoint.includes("YOUR_")) {
+    if (!bookingApi && (!endpoint || !hasAllEntries || endpoint.includes("YOUR_"))) {
       status.textContent =
         "予約フォームの保存先がまだ設定されていません。設定後、このフォームからスプレッドシート保存が動きます。";
       return;
@@ -354,27 +360,26 @@ if (bookingForm) {
     try {
       const data = new FormData(bookingForm);
       const selectedSlot = bookingForm.querySelector('input[name="slot"]:checked');
-      const bookingApi = bookingForm.dataset.bookingApi || bookingConfig.apiEndpoint || "";
+      if (!selectedSlot) throw new Error("希望日程を選択してください。");
 
       if (bookingApi) {
-        const managedData = new URLSearchParams();
-        managedData.append("action", "reserve");
-        managedData.append("slotId", selectedSlot?.dataset.slotId || "");
-        managedData.append("slot", data.get("slot") || "");
-        managedData.append("name", data.get("name") || "");
-        managedData.append("email", data.get("email") || "");
-        managedData.append("phone", data.get("phone") || "");
-        managedData.append("experience", data.get("experience") || "");
-        managedData.append("interest", data.get("interest") || "");
-        managedData.append("zoom", bookingZoomUrl);
-        managedData.append("source", location.href);
-
-        await fetch(bookingApi, {
-          method: "POST",
-          mode: "no-cors",
-          headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
-          body: managedData.toString(),
+        const managedData = new URLSearchParams({
+          action: "reserve",
+          slotId: selectedSlot.dataset.slotId || "",
+          slot: data.get("slot") || "",
+          name: data.get("name") || "",
+          email: data.get("email") || "",
+          phone: data.get("phone") || "",
+          experience: data.get("experience") || "",
+          interest: data.get("interest") || "",
+          zoom: bookingZoomUrl,
+          source: location.href,
         });
+        const result = await fetchJsonp(`${bookingApi}?${managedData.toString()}`);
+
+        if (!result || !result.ok) {
+          throw new Error(result?.error || "予約を保存できませんでした。");
+        }
 
         bookingForm.reset();
         await loadManagedBookingSlots();
