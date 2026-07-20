@@ -90,8 +90,8 @@ function normalizeSlotGroups(weeks) {
       label: slot.label || `${slot.date || ""} ${slot.time || ""}`.trim(),
       capacity: Number(slot.capacity || 0),
       remaining: Number(slot.remaining ?? slot.capacity ?? 0),
-    })),
-  }));
+    })).filter((slot) => !isExpiredSlot(slot)),
+  })).filter((week) => week.slots.length > 0);
 }
 
 function flattenSlots(weeks) {
@@ -104,10 +104,26 @@ function getSlotDate(slot) {
     return new Date(Number(idMatch[1]), Number(idMatch[2]) - 1, Number(idMatch[3]));
   }
 
-  const dateMatch = String(slot.date || "").match(/(\d{1,2})月(\d{1,2})日/);
+  const dateMatch = String(slot.date || "").match(/(?:(\d{4})年)?(\d{1,2})月(\d{1,2})日/);
   if (!dateMatch) return null;
   const now = new Date();
-  return new Date(now.getFullYear(), Number(dateMatch[1]) - 1, Number(dateMatch[2]));
+  const year = Number(dateMatch[1] || now.getFullYear());
+  return new Date(year, Number(dateMatch[2]) - 1, Number(dateMatch[3]));
+}
+
+function getSlotStartDateTime(slot) {
+  const date = getSlotDate(slot);
+  if (!date) return null;
+  const timeMatch = String(slot.time || "").match(/(\d{1,2}):(\d{2})/);
+  if (!timeMatch) return date;
+  date.setHours(Number(timeMatch[1]), Number(timeMatch[2]), 0, 0);
+  return date;
+}
+
+function isExpiredSlot(slot) {
+  const start = getSlotStartDateTime(slot);
+  if (!start) return false;
+  return start.getTime() <= Date.now();
 }
 
 function formatMonthTitle(date) {
