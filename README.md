@@ -17,6 +17,8 @@ GitHub Pagesでそのまま公開できる静的ホームページです。
 - 初期状態では `booking-slots.js` の日程を表示します。
 - `automation/booking-management.gs` をApps Scriptで公開すると、`admin.html` から日程追加・削除、残席、満員御礼、予約者ステータスを管理できます。
 - 予約管理システムを設定した後は、Zoomリンク自動送信とスプレッドシート保存まで動かせます。
+- 公開予約ページでは、過去になった予約枠は自動で非表示になります。
+- Apps Script側でも過去枠は自動で残席0・非公開へ閉じます。
 
 ## 差し替える場所
 
@@ -62,11 +64,18 @@ GitHub Pagesの無料URLを使う場合、維持費は0円です。
 
 1. Stripe Payment Linksで決済
 2. Stripe WebhookがApps Scriptへ決済完了を通知
-3. Apps ScriptがGoogle Driveの会員コンテンツフォルダへ閲覧権限を付与
-4. 購入者へ会員コンテンツURL入りの案内メールを送信
-5. 返金イベントを受け取った場合は閲覧権限を削除
+3. Apps Scriptが購入者向け会員サイトのログイン情報を発行
+4. 購入者へ会員サイトURL・ログイン情報入りの案内メールを送信
+5. 返金イベントを受け取った場合は会員アカウント停止、または運営へ確認通知
 
 設定手順は `automation/stripe-member-access-README.md` を確認してください。
+
+Supabaseの個別ログイン自動発行キーが未設定の場合は、Apps ScriptのScript Propertiesに以下を設定すると、共通ログインを案内できます。
+
+```text
+SHARED_MEMBER_USERNAME = AILIFE
+SHARED_MEMBER_PASSWORD = 共有パスワード
+```
 
 ## Stripe決済リンク
 
