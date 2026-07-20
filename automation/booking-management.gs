@@ -42,18 +42,26 @@ const RESERVATION_HEADERS = [
 ];
 
 function doGet(e) {
-  const action = getParam_(e, 'action') || 'slots';
+  try {
+    const action = getParam_(e, 'action') || 'slots';
 
-  if (action === 'slots') {
-    const includePrivate = getParam_(e, 'includePrivate') === '1';
-    const data = {
-      ok: true,
-      weeks: getPublicSlotGroups_(includePrivate),
-    };
-    return output_(e, data);
+    if (action === 'slots') {
+      const includePrivate = getParam_(e, 'includePrivate') === '1';
+      const data = {
+        ok: true,
+        weeks: getPublicSlotGroups_(includePrivate),
+      };
+      return output_(e, data);
+    }
+
+    if (action === 'reserve') {
+      return output_(e, reserveSlot_(e));
+    }
+
+    return output_(e, { ok: false, error: 'Unknown action' });
+  } catch (error) {
+    return output_(e, { ok: false, error: error.message });
   }
-
-  return output_(e, { ok: false, error: 'Unknown action' });
 }
 
 function setupBookingSystem() {
@@ -108,55 +116,65 @@ function doPost(e) {
 }
 
 function reserveSlot_(e) {
-  const slotId = getParam_(e, 'slotId');
-  const slotLabel = getParam_(e, 'slot');
-  const name = getParam_(e, 'name') || 'お客様';
-  const email = normalizeEmail_(getParam_(e, 'email'));
-  const phone = getParam_(e, 'phone');
-  const experience = getParam_(e, 'experience');
-  const interest = getParam_(e, 'interest');
-  const source = getParam_(e, 'source');
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  let reservation;
 
-  if (!slotId && !slotLabel) throw new Error('希望日程が選択されていません。');
-  if (!email) throw new Error('メールアドレスがありません。');
+  try {
+    const slotId = getParam_(e, 'slotId');
+    const slotLabel = getParam_(e, 'slot');
+    const name = getParam_(e, 'name') || 'お客様';
+    const email = normalizeEmail_(getParam_(e, 'email'));
+    const phone = getParam_(e, 'phone');
+    const experience = getParam_(e, 'experience');
+    const interest = getParam_(e, 'interest');
+    const source = getParam_(e, 'source');
 
-  const slotsSheet = getSheet_(BOOKING_CONFIG.slotsSheetName, SLOT_HEADERS);
-  closeExpiredSlots_(slotsSheet);
-  const slot = findSlot_(slotsSheet, slotId, slotLabel);
+    if (!slotId && !slotLabel) throw new Error('希望日程が選択されていません。');
+    if (!email) throw new Error('メールアドレスがありません。');
 
-  if (slot.rowNumber) {
-    if (isExpiredSlotRow_(slot.row)) throw new Error('この日程は受付終了です。');
-    const remaining = Number(slot.row[SLOT_HEADERS.indexOf('残席')] || 0);
-    if (remaining <= 0) throw new Error('この日程は満員です。');
-    slotsSheet.getRange(slot.rowNumber, SLOT_HEADERS.indexOf('残席') + 1).setValue(remaining - 1);
-    slotsSheet.getRange(slot.rowNumber, SLOT_HEADERS.indexOf('更新日時') + 1).setValue(new Date());
+    const slotsSheet = getSheet_(BOOKING_CONFIG.slotsSheetName, SLOT_HEADERS);
+    closeExpiredSlots_(slotsSheet);
+    const slot = findSlot_(slotsSheet, slotId, slotLabel);
+
+    if (slot.rowNumber) {
+      if (isExpiredSlotRow_(slot.row)) throw new Error('この日程は受付終了です。');
+      const remaining = Number(slot.row[SLOT_HEADERS.indexOf('残席')] || 0);
+      if (remaining <= 0) throw new Error('この日程は満員です。');
+      slotsSheet.getRange(slot.rowNumber, SLOT_HEADERS.indexOf('残席') + 1).setValue(remaining - 1);
+      slotsSheet.getRange(slot.rowNumber, SLOT_HEADERS.indexOf('更新日時') + 1).setValue(new Date());
+    }
+
+    const finalSlotLabel = slot.label || slotLabel;
+    const reservationsSheet = getSheet_(BOOKING_CONFIG.reservationsSheetName, RESERVATION_HEADERS);
+    reservationsSheet.appendRow([
+      new Date(),
+      '予約済み',
+      name,
+      email,
+      phone,
+      finalSlotLabel,
+      slotId,
+      experience,
+      interest,
+      BOOKING_CONFIG.zoomUrl,
+      '',
+      '未参加',
+      '未申込',
+      '',
+      '未申込',
+      source,
+      '',
+    ]);
+
+    reservation = { name, email, phone, finalSlotLabel, experience, interest };
+  } finally {
+    lock.releaseLock();
   }
 
-  const finalSlotLabel = slot.label || slotLabel;
-  const reservationsSheet = getSheet_(BOOKING_CONFIG.reservationsSheetName, RESERVATION_HEADERS);
-  reservationsSheet.appendRow([
-    new Date(),
-    '予約済み',
-    name,
-    email,
-    phone,
-    finalSlotLabel,
-    slotId,
-    experience,
-    interest,
-    BOOKING_CONFIG.zoomUrl,
-    '',
-    '未参加',
-    '未申込',
-    '',
-    '未申込',
-    source,
-    '',
-  ]);
-
-  GmailApp.sendEmail(email, '【AI LIFE ACADEMY】無料説明会の予約を受け付けました', buildReservationMail_({
-    name,
-    slot: finalSlotLabel,
+  GmailApp.sendEmail(reservation.email, '【AI LIFE ACADEMY】無料説明会の予約を受け付けました', buildReservationMail_({
+    name: reservation.name,
+    slot: reservation.finalSlotLabel,
     zoomUrl: BOOKING_CONFIG.zoomUrl,
   }), {
     name: BOOKING_CONFIG.senderName,
@@ -164,11 +182,11 @@ function reserveSlot_(e) {
   });
 
   GmailApp.sendEmail(BOOKING_CONFIG.adminEmail, '【AI LIFE ACADEMY】無料説明会の予約が入りました',
-    `無料説明会の予約が入りました。\n\n氏名: ${name}\nメール: ${email}\n電話番号: ${phone}\n希望日程: ${finalSlotLabel}\nAI経験: ${experience}\n知りたいこと: ${interest}`,
+    `無料説明会の予約が入りました。\n\n氏名: ${reservation.name}\nメール: ${reservation.email}\n電話番号: ${reservation.phone}\n希望日程: ${reservation.finalSlotLabel}\nAI経験: ${reservation.experience}\n知りたいこと: ${reservation.interest}`,
     { name: BOOKING_CONFIG.senderName }
   );
 
-  return { ok: true, reserved: true, slot: finalSlotLabel };
+  return { ok: true, reserved: true, slot: reservation.finalSlotLabel };
 }
 
 function addSlot_(e) {
