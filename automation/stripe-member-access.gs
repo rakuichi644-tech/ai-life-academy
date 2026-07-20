@@ -2,7 +2,7 @@ const CONFIG = {
   adminEmail: 'rakuichi644@gmail.com',
   senderName: 'あいらいふ運営事務局',
   productName: 'AI LIFE ACADEMY',
-  memberSiteUrl: 'https://andtete-group.github.io/ai-life-roadmap/',
+  memberSiteUrl: 'https://ai-life-roadmap.s8138.chatgpt.site/login',
   supabaseUrl: 'https://hahdvhvvasefphriviga.supabase.co',
   spreadsheetName: 'AI LIFE ACADEMY_購入者管理',
   purchaserSpreadsheetId: '1zRcSUefAtjQrFqC_wxJUChL90-2ffqXNhTHM7Y6F7ow',
@@ -109,9 +109,12 @@ function handleCheckoutCompleted_(event) {
     username: credentials.username,
     password: credentials.password,
     supabaseUserId: credentials.userId,
-    accountStatus: '有効',
+    accountStatus: credentials.mode === 'shared' ? '共通ログイン案内' : '有効',
     mailStatus: '送信済み',
     purchaserStatus: '決済済み',
+    memo: credentials.mode === 'shared'
+      ? 'Supabase自動発行設定が未完了のため、Script Propertiesの共通ログインを案内しました。'
+      : '',
   });
 
   return json_({ ok: true, granted: true, email });
@@ -233,7 +236,7 @@ function fetchStripeEvent_(eventId) {
 
 function createMemberAccount_(data) {
   const serviceRoleKey = PropertiesService.getScriptProperties().getProperty('SUPABASE_SERVICE_ROLE_KEY');
-  if (!serviceRoleKey) throw new Error('Script PropertiesにSUPABASE_SERVICE_ROLE_KEYが設定されていません。');
+  if (!serviceRoleKey) return getSharedMemberCredentials_();
 
   const username = generateUsername_();
   const password = generatePassword_();
@@ -263,7 +266,19 @@ function createMemberAccount_(data) {
     throw new Error(`会員アカウント作成に失敗しました。status=${status} body=${body}`);
   }
   const user = JSON.parse(body);
-  return { username, password, userId: user.id };
+  return { username, password, userId: user.id, mode: 'individual' };
+}
+
+function getSharedMemberCredentials_() {
+  const properties = PropertiesService.getScriptProperties();
+  const username = properties.getProperty('SHARED_MEMBER_USERNAME');
+  const password = properties.getProperty('SHARED_MEMBER_PASSWORD');
+
+  if (!username || !password) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY未設定です。個別ログインを自動発行できない場合は、Script PropertiesにSHARED_MEMBER_USERNAMEとSHARED_MEMBER_PASSWORDを設定してください。');
+  }
+
+  return { username, password, userId: '', mode: 'shared' };
 }
 
 function deleteMemberAccount_(userId) {
@@ -308,13 +323,16 @@ URL: ${data.memberSiteUrl}
 まずは「00_本コンテンツの使い方」から読み進めてください。
 その後、以下の順番で学習するとスムーズです。
 
-1. 01_AI初心者
-2. 02_AI活用
-3. 03_実践・ビジネス
-4. 04_上級・事業化
-5. 05_プロンプト集
-6. 06_テンプレート配布
-7. 07_Zoomアーカイブ
+1. 第1章 AI活用ロードマップ
+2. 第2章 自分専用プロンプト集
+3. 第3章 仕事テンプレ・AIワークフロー
+4. 第4章 AI秘書・AI社員設計
+5. 第5章 Codex実践マニュアル
+6. 第7章 Instagram投稿10本作成
+7. 第8章 AIショート動画制作
+8. 第9章 AI商品完成スタジオ
+9. 第10章 専用アプリ設計ツール
+10. 第12章 AI COMPANY OS
 
 ユーザー名とパスワードはお客様専用です。第三者へ共有しないでください。
 ログインできない場合は、このメールにそのまま返信してください。
